@@ -2,7 +2,6 @@ import { Router } from 'express';
 import api from '../services/api';
 import User from '../model/User';
 import Repository from '../model/Repository';
-import Urls from '../config/urls';
 import {paginate} from "../services/paginateService";
 
 const usersRouter = Router();
@@ -23,9 +22,11 @@ usersRouter.get('/', async (request, response) => {
     avatar_url: user.avatar_url
   }));
 
+  let pageNumber = (since ? since : 1);
+
   return response.json({
-    result: paginate(users,since ? since : 1,10),
-    next: `${Urls.baseURL}?since=${since + 1}`
+    result: paginate(users,pageNumber,10),
+    nextPageQuery: `?since=${pageNumber + 1}`
   });
 });
 
