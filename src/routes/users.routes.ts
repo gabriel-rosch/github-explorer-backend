@@ -16,7 +16,7 @@ usersRouter.get('/', async (request, response) => {
     login: user.login,
     avatar_url: user.avatar_url
   }));
-  if(!users) {
+  if(!users.length) {
     return response.status(403).json({message: 'Error request to github'})
   }
   let pageNumber = (since ? since : 1);
