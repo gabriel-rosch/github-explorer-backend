@@ -1,29 +1,25 @@
 import { Router } from 'express';
-import api from '../services/api';
 import User from '../model/User';
 import Repository from '../model/Repository';
-import {paginate} from "../services/paginateService";
-
+import { paginate } from '../services/paginateService';
+import { allUsers,userDetails,userRepositories} from '../repository/gitHub/users'
 const usersRouter = Router();
 
 usersRouter.get('/', async (request, response) => {
-  const autorizarion = request.get('Authorization');
+  const token = request.get('Authorization');
   const since = Number(request.query.since);
 
-  const resposeGitHub = await api.get('/users?per_page=200', {
-    headers: {
-      'Authorization': autorizarion,
-    }
-  });
+  const users = await allUsers(token);
 
-  const users = resposeGitHub.data.map((user:User) => ({
+  users.map((user:User) => ({
     id: user.id,
     login: user.login,
     avatar_url: user.avatar_url
   }));
-
+  if(!users) {
+    return response.status(403).json({message: 'Error request to github'})
+  }
   let pageNumber = (since ? since : 1);
-
   return response.json({
     result: paginate(users,pageNumber,10),
     nextPageQuery: `?since=${pageNumber + 1}`
@@ -32,25 +28,20 @@ usersRouter.get('/', async (request, response) => {
 
 
 usersRouter.get('/:userName/details', async (request, response) => {
-  const autorizarion = request.get('Authorization');
+  const token = request.get('Authorization');
   const { userName } = request.params;
-  const resposeGitHub = await api.get(`/users/${ userName }`,{
-    headers: {
-      'Authorization': autorizarion,
-    }
-  });
-  return response.json(resposeGitHub.data);
+  const user = await userDetails(token, userName);
+  if(!user) {
+    return response.status(403).json({message: 'Error request to github'})
+  }
+  return response.json(user);
 });
 
 usersRouter.get('/:userName/repos', async (request, response) => {
-  const autorizarion = request.get('Authorization');
+  const token = request.get('Authorization');
   const { userName } = request.params;
-  const resposeGitHub = await api.get(`/users/${ userName }/repos`,{
-    headers: {
-      'Authorization': autorizarion,
-    }
-  });
-  return response.json(resposeGitHub.data.map((repo:Repository) => ({
+  const repositories = await userRepositories(token,userName);
+  return response.json(repositories.map((repo:Repository) => ({
     id: repo.id,
     name: repo.name,
     html_url: repo.html_url,
